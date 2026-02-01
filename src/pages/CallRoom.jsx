@@ -15,7 +15,7 @@ const CallRoom = ({ socket, user }) => {
   const { startAudio, stopAudio, remoteAudioRef } = useWebRTC(
     socket,
     isAgent,
-    roomConnected
+    roomConnected,
   );
 
   useEffect(() => {
@@ -62,15 +62,11 @@ const CallRoom = ({ socket, user }) => {
     });
   };
 
-  const enableAudio = async () => {
-    if (!roomConnected) return;
-    await startAudio();
+  const enableAudio = () => {
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false;
-      remoteAudioRef.current.volume = 1;
       remoteAudioRef.current.play().catch(() => {});
     }
-    setAudioEnabled(true);
   };
 
   const endCall = () => {
