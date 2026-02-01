@@ -8,6 +8,7 @@ const CallRoom = ({ socket, user }) => {
   const [status, setStatus] = useState("Connecting");
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [roomConnected, setRoomConnected] = useState(false);
+  const [needsManualPlay, setNeedsManualPlay] = useState(false);
 
   const hasJoined = useRef(false);
   const isAgent = user.role.toLowerCase() === "agent";
@@ -69,27 +70,45 @@ const CallRoom = ({ socket, user }) => {
   const enableAudio = async () => {
     console.log("🎧 Enable audio clicked");
 
-    // Initialize audio element
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false;
-      remoteAudioRef.current.autoplay = true;
     }
 
     try {
       await startAudio();
       setAudioEnabled(true);
 
-      // Try to play audio after a delay
+      // Check if audio can play automatically
       setTimeout(() => {
         if (remoteAudioRef.current && remoteAudioRef.current.srcObject) {
           remoteAudioRef.current
             .play()
-            .then(() => console.log("✅ Audio playing"))
-            .catch((e) => console.log("⚠️ Play blocked:", e.message));
+            .then(() => {
+              console.log("✅ Audio playing automatically");
+              setNeedsManualPlay(false);
+            })
+            .catch((e) => {
+              console.log("⚠️ Auto-play blocked, need manual play");
+              setNeedsManualPlay(true);
+            });
         }
       }, 1000);
     } catch (error) {
       console.error("❌ Error starting audio:", error);
+    }
+  };
+
+  const manualPlayAudio = () => {
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current
+        .play()
+        .then(() => {
+          console.log("✅ Manual audio play successful");
+          setNeedsManualPlay(false);
+        })
+        .catch((e) => {
+          console.error("❌ Manual play failed:", e);
+        });
     }
   };
 
@@ -105,6 +124,12 @@ const CallRoom = ({ socket, user }) => {
         <div>
           <h2 className="text-xl font-semibold">Voice Call – {user.role}</h2>
           <p className="text-sm text-gray-400">{user.name}</p>
+          {audioEnabled && (
+            <p className="text-xs text-gray-500 mt-1">
+              Status:{" "}
+              {remoteAudioRef.current?.srcObject ? "Connected" : "Waiting..."}
+            </p>
+          )}
         </div>
         <StatusBar status={status} />
       </div>
@@ -115,6 +140,15 @@ const CallRoom = ({ socket, user }) => {
           className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded mb-4 self-start"
         >
           {isAgent ? "Start Call" : "Join Call"}
+        </button>
+      )}
+
+      {needsManualPlay && (
+        <button
+          onClick={manualPlayAudio}
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded mb-4 self-start"
+        >
+          🔇 Click to Play Audio
         </button>
       )}
 
