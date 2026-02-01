@@ -67,7 +67,7 @@ const CallRoom = ({ socket, user }) => {
     }
 
     socket.on("room-status", ({ connected }) => {
-      console.log("📊 Room status:", connected ? "Connected" : "Connecting");
+      console.log("Room status:", connected ? "Connected" : "Connecting");
       setStatus(connected ? "Connected" : "Connecting");
       setRoomConnected(connected);
     });
@@ -77,7 +77,7 @@ const CallRoom = ({ socket, user }) => {
     });
 
     socket.on("call-ended", () => {
-      console.log("📞 Call ended");
+      console.log("Call ended");
       stopAudio();
       window.location.reload();
     });
@@ -95,7 +95,7 @@ const CallRoom = ({ socket, user }) => {
     });
 
     return () => {
-      console.log("🧹 Cleaning up");
+      console.log("Cleaning up");
       stopAudio();
       socket.off("room-status");
       socket.off("chat-message");
@@ -116,7 +116,7 @@ const CallRoom = ({ socket, user }) => {
   };
 
   const enableAudio = async () => {
-    console.log("🎧 Enable audio clicked");
+    console.log("Enable audio clicked");
 
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false;
@@ -135,17 +135,17 @@ const CallRoom = ({ socket, user }) => {
           remoteAudioRef.current
             .play()
             .then(() => {
-              console.log("✅ Audio playing automatically");
+              console.log("Audio playing automatically");
               setNeedsManualPlay(false);
             })
             .catch((e) => {
-              console.log("⚠️ Auto-play blocked, need manual play");
+              console.log("Auto-play blocked, need manual play");
               setNeedsManualPlay(true);
             });
         }
       }, 1000);
     } catch (error) {
-      console.error("❌ Error starting audio:", error);
+      console.error("Error starting audio:", error);
     }
   };
 
@@ -154,11 +154,11 @@ const CallRoom = ({ socket, user }) => {
       remoteAudioRef.current
         .play()
         .then(() => {
-          console.log("✅ Manual audio play successful");
+          console.log("Manual audio play successful");
           setNeedsManualPlay(false);
         })
         .catch((e) => {
-          console.error("❌ Manual play failed:", e);
+          console.error("Manual play failed:", e);
         });
     }
   };
@@ -167,7 +167,7 @@ const CallRoom = ({ socket, user }) => {
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = !remoteAudioRef.current.muted;
       setIsMuted(!isMuted);
-      console.log(isMuted ? "🔊 Unmuted" : "🔇 Muted");
+      console.log(isMuted ? "Unmuted" : "Muted");
     }
   };
 
@@ -242,7 +242,7 @@ const CallRoom = ({ socket, user }) => {
               onClick={manualPlayAudio}
               className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition-colors"
             >
-              🔊 Click to Play Audio
+              Click to Play Audio
             </button>
             <p className="text-sm text-gray-400 mt-2">
               Browser requires permission to play audio
@@ -270,21 +270,21 @@ const CallRoom = ({ socket, user }) => {
                     : "bg-gray-700 hover:bg-gray-600"
                 }`}
               >
-                {isMuted ? "🔊 Unmute" : "🔇 Mute"}
+                {isMuted ? "Unmute" : "Mute"}
               </button>
 
               <button
                 onClick={manualPlayAudio}
                 className="flex-1 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 transition-colors"
               >
-                🔊 Play Audio
+                Play Audio
               </button>
 
               <button
                 onClick={endCall}
                 className="flex-1 py-3 rounded-lg font-medium bg-red-600 hover:bg-red-700 transition-colors"
               >
-                📞 End Call
+                End Call
               </button>
             </div>
 
@@ -298,15 +298,12 @@ const CallRoom = ({ socket, user }) => {
         )}
       </div>
 
-      {/* AUDIO ELEMENT */}
       <audio ref={remoteAudioRef} playsInline autoPlay className="hidden" />
 
-      {/* CHAT */}
       <div className="flex-1">
         <ChatBox messages={messages} sendMessage={sendMessage} />
       </div>
 
-      {/* BOTTOM END CALL BUTTON */}
       {audioEnabled && (
         <div className="flex justify-end mt-4 pt-4 border-t border-gray-800">
           <button

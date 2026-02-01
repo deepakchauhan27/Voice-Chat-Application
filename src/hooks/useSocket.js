@@ -9,8 +9,7 @@ export const useSocket = () => {
     }
 
     return () => {
-      // ❌ DO NOT disconnect here
-      // socket.disconnect();
+      console.log("🔌 Disconnecting socket...");
     };
   }, []);
 

@@ -9,7 +9,6 @@ function App() {
   const [user, setUser] = useState(null);
 
   const joinCall = (name, role) => {
-    // ❌ DO NOT EMIT JOIN HERE
     setUser({ name, role });
   };
 

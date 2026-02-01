@@ -8,7 +8,7 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
   const createPeer = async () => {
     if (peerRef.current) return peerRef.current;
 
-    console.log("🎤 Getting microphone...");
+    console.log("Getting microphone...");
     
     try {
       // Get microphone stream
@@ -21,7 +21,7 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
       });
 
       localStreamRef.current = stream;
-      console.log("✅ Microphone acquired");
+      console.log("Microphone acquired");
 
       // Create peer connection
       const pc = new RTCPeerConnection({
@@ -30,24 +30,24 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
 
       // Add ALL local tracks to peer connection
       stream.getTracks().forEach((track) => {
-        console.log("🎤 Adding local track:", track.kind, track.id);
+        console.log("Adding local track:", track.kind, track.id);
         pc.addTrack(track, stream);
       });
 
       // Handle incoming audio (other person's voice)
       pc.ontrack = (e) => {
-        console.log("🔊 ONTRACK: Received remote stream with", e.streams.length, "stream(s)");
+        console.log("ONTRACK: Received remote stream with", e.streams.length, "stream(s)");
         
         if (e.streams[0] && remoteAudioRef.current) {
-          console.log("✅ Attaching remote stream to audio element");
+          console.log("Attaching remote stream to audio element");
           remoteAudioRef.current.srcObject = e.streams[0];
           
           // Try to play automatically
           setTimeout(() => {
             if (remoteAudioRef.current && remoteAudioRef.current.srcObject) {
               remoteAudioRef.current.play()
-                .then(() => console.log("🎵 Remote audio playing"))
-                .catch(e => console.log("⚠️ Auto-play blocked:", e.message));
+                .then(() => console.log("Remote audio playing"))
+                .catch(e => console.log("Auto-play blocked:", e.message));
             }
           }, 500);
         }
@@ -62,18 +62,18 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
 
       // Connection state changes
       pc.oniceconnectionstatechange = () => {
-        console.log("❄️ ICE state:", pc.iceConnectionState);
+        console.log("ICE state:", pc.iceConnectionState);
       };
 
       pc.onconnectionstatechange = () => {
-        console.log("🔗 Connection state:", pc.connectionState);
+        console.log("Connection state:", pc.connectionState);
       };
 
       peerRef.current = pc;
       return pc;
       
     } catch (error) {
-      console.error("❌ Failed to get microphone:", error);
+      console.error("Failed to get microphone:", error);
       return null;
     }
   };
@@ -81,25 +81,25 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    console.log("🔌 Setting up WebRTC for", isCaller ? "Agent" : "Customer");
+    console.log("Setting up WebRTC for", isCaller ? "Agent" : "Customer");
 
     // Customer receives offer from agent
     socket.on("offer", async (offer) => {
       if (isCaller) return;
       
-      console.log("📞 Customer received offer from agent");
+      console.log(" Customer received offer from agent");
       
       const pc = await createPeer();
       if (!pc) return;
 
-      console.log("✅ Customer setting remote description");
+      console.log(" Customer setting remote description");
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       
-      console.log("📤 Customer creating answer");
+      console.log("Customer creating answer");
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       
-      console.log("📤 Customer sending answer to agent");
+      console.log("Customer sending answer to agent");
       socket.emit("answer", answer);
     });
 
@@ -107,15 +107,15 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
     socket.on("answer", async (answer) => {
       if (!isCaller) return;
       
-      console.log("✅ Agent received answer from customer");
+      console.log("Agent received answer from customer");
       
       const pc = peerRef.current;
       if (!pc) {
-        console.error("❌ No peer connection for agent");
+        console.error(" No peer connection for agent");
         return;
       }
 
-      console.log("✅ Agent setting remote description");
+      console.log("Agent setting remote description");
       await pc.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
@@ -127,7 +127,7 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
           await pc.addIceCandidate(new RTCIceCandidate(candidate));
         }
       } catch (error) {
-        console.warn("⚠️ Failed to add ICE candidate:", error);
+        console.warn("Failed to add ICE candidate:", error);
       }
     });
 
@@ -139,40 +139,40 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
   }, [socket, isCaller, isConnected]);
 
   const startAudio = async () => {
-    console.log("🚀 Starting audio call as", isCaller ? "Agent" : "Customer");
+    console.log("Starting audio call as", isCaller ? "Agent" : "Customer");
     
     const pc = await createPeer();
     if (!pc) {
-      console.error("❌ Failed to create peer connection");
+      console.error("Failed to create peer connection");
       return;
     }
 
     // Only AGENT creates the initial offer
     if (isCaller) {
-      console.log("📞 Agent creating offer...");
+      console.log("Agent creating offer...");
       const offer = await pc.createOffer({
         offerToReceiveAudio: true, // IMPORTANT: Agent wants to receive audio from customer
       });
       
-      console.log("✅ Agent setting local description");
+      console.log("Agent setting local description");
       await pc.setLocalDescription(offer);
       
-      console.log("📤 Agent sending offer to customer");
+      console.log("Agent sending offer to customer");
       socket.emit("offer", offer);
     } else {
-      console.log("👂 Customer waiting for agent's offer");
+      console.log("Customer waiting for agent's offer");
       // Customer waits for offer - peer is already created with microphone
     }
   };
 
   const stopAudio = () => {
-    console.log("🛑 Stopping audio");
+    console.log("Stopping audio");
     
     // Stop local microphone
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => {
         t.stop();
-        console.log("🛑 Stopped local track:", t.id);
+        console.log("Stopped local track:", t.id);
       });
       localStreamRef.current = null;
     }

@@ -19,12 +19,9 @@ const ChatBox = ({ messages, sendMessage }) => {
   const formatTime = (timeString) => {
     if (!timeString) return "";
 
-    // If it's already a formatted time string, return as is
     if (typeof timeString === "string" && timeString.includes(":")) {
       return timeString;
     }
-
-    // If it's a Date object or timestamp
     try {
       const date = new Date(timeString);
       if (!isNaN(date.getTime())) {
