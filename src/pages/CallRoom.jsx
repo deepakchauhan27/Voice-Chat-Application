@@ -1,49 +1,64 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import ChatBox from "../components/ChatBox";
-import CallControls from "../components/CallControls";
 import StatusBar from "../components/StatusBar";
-import Timer from "../components/Timer";
 import { useWebRTC } from "../hooks/useWebRTC";
 
 const CallRoom = ({ socket, user }) => {
   const [messages, setMessages] = useState([]);
   const [status, setStatus] = useState("Connecting");
-  const navigate = useNavigate();
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
-  const { remoteAudioRef, startAudio } = useWebRTC(socket);
+  const hasJoined = useRef(false);
+
+  const isAgent = user.role.toLowerCase() === "agent";
+  const { startAudio, stopAudio, remoteAudioRef } = useWebRTC(socket, isAgent);
 
   useEffect(() => {
-    startAudio();
+    // ✅ JOIN ONLY ONCE
+    if (!hasJoined.current) {
+      socket.emit("join", {
+        role: user.role.toLowerCase(),
+      });
+      hasJoined.current = true;
+    }
 
-    socket.on("connected", () => {
-      setStatus("Connected");
+    // ✅ ROOM STATUS
+    socket.on("room-status", ({ connected }) => {
+      setStatus(connected ? "Connected" : "Connecting");
     });
 
+    // ✅ CHAT
     socket.on("chat-message", (msg) => {
+      console.log("📨 FRONTEND RECEIVED:", msg);
       setMessages((prev) => [...prev, msg]);
     });
 
+    // ✅ CALL END
     socket.on("call-ended", () => {
-      setStatus("Call Ended");
-      setTimeout(() => navigate("/"), 1500);
+      stopAudio();
+      window.location.reload();
     });
 
-    socket.on("disconnect", () => {
-      setStatus("Disconnected");
-      navigate("/");
+    // ✅ JOIN REJECT
+    socket.on("join-rejected", (reason) => {
+      alert(reason);
+      window.location.reload();
     });
+
+    console.log("🔗 Socket connected?", socket.connected);
 
     return () => {
-      socket.off("connected");
+      stopAudio();
+      socket.off("room-status");
       socket.off("chat-message");
       socket.off("call-ended");
-      socket.off("disconnect");
     };
-  }, [socket, navigate, startAudio]);
+  }, [socket, user.role, stopAudio]);
 
   const sendMessage = (text) => {
     if (!text.trim()) return;
+
+    console.log("📤 FRONTEND SEND:", text);
 
     socket.emit("send-message", {
       text,
@@ -53,36 +68,55 @@ const CallRoom = ({ socket, user }) => {
     });
   };
 
+  const enableAudio = async () => {
+    console.log("🎧 Enable Audio clicked");
+    await startAudio();
+    setAudioEnabled(true);
+  };
+
   const endCall = () => {
     socket.emit("end-call");
-    navigate("/");
+    stopAudio();
+    window.location.reload();
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4">
-      <div className="w-full max-w-4xl bg-gray-900 rounded-2xl shadow-xl p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold">
-              Connected as <span className="text-indigo-400">{user.role}</span>
-            </h2>
-            <p className="text-sm text-gray-400">{user.name}</p>
-          </div>
-          <StatusBar status={status} />
+    <div className="min-h-screen bg-gray-950 text-white p-8 flex flex-col">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-xl font-semibold">Connected as {user.role}</h2>
+          <p className="text-sm text-gray-400">{user.name}</p>
         </div>
+        <StatusBar status={status} />
+      </div>
 
-        {/* Timer */}
-        <Timer />
+      {/* 🔊 ENABLE AUDIO BUTTON */}
+      {status === "Connected" && !audioEnabled && (
+        <button
+          onClick={enableAudio}
+          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded mb-4 self-start"
+        >
+          Enable Audio
+        </button>
+      )}
 
-        {/* Remote audio */}
-        <audio ref={remoteAudioRef} autoPlay />
+      {/* 🔊 REMOTE AUDIO OUTPUT */}
+      <audio ref={remoteAudioRef} autoPlay />
 
-        {/* Chat */}
+      {/* CHAT */}
+      <div className="flex-1">
         <ChatBox messages={messages} sendMessage={sendMessage} />
+      </div>
 
-        {/* Controls */}
-        <CallControls onEnd={endCall} />
+      {/* END CALL */}
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={endCall}
+          className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold"
+        >
+          End Call
+        </button>
       </div>
     </div>
   );

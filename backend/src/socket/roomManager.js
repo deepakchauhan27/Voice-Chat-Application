@@ -1,8 +1,13 @@
 let users = [];
-let roomId = "support-room";
+const ROOM_ID = "support-room";
 
 export const addUser = ({ socketId, name, role }) => {
-  users.push({ socketId, name, role, roomId });
+  users.push({
+    socketId,
+    name,
+    role: role.toLowerCase(), // 🔥 FIX
+    roomId: ROOM_ID
+  });
 };
 
 export const removeUser = (socketId) => {
@@ -14,9 +19,12 @@ export const getUser = (socketId) => {
 };
 
 export const getPairedUsers = () => {
-  const customer = users.find((u) => u.role === "Customer");
-  const agent = users.find((u) => u.role === "Agent");
+  const customer = users.find((u) => u.role === "customer");
+  const agent = users.find((u) => u.role === "agent");
+
   return customer && agent ? { customer, agent } : null;
 };
 
-export const getRoomId = () => roomId;
+export const getRoomId = () => ROOM_ID;
+
+export const getUserCount = () => users.length;

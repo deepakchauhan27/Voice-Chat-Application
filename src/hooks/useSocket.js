@@ -4,11 +4,13 @@ import { socket } from "../services/socket";
 export const useSocket = () => {
   useEffect(() => {
     if (!socket.connected) {
+      console.log("🔌 Connecting socket...");
       socket.connect();
     }
 
     return () => {
-      socket.disconnect();
+      // ❌ DO NOT disconnect here
+      // socket.disconnect();
     };
   }, []);
 
