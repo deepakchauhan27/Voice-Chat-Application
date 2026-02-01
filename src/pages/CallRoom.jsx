@@ -20,11 +20,13 @@ const CallRoom = ({ socket, user }) => {
 
   useEffect(() => {
     if (!hasJoined.current) {
+      console.log("👤 Joining as", user.role);
       socket.emit("join", { role: user.role.toLowerCase() });
       hasJoined.current = true;
     }
 
     socket.on("room-status", ({ connected }) => {
+      console.log("📊 Room status:", connected ? "Connected" : "Connecting");
       setStatus(connected ? "Connected" : "Connecting");
       setRoomConnected(connected);
     });
@@ -34,6 +36,7 @@ const CallRoom = ({ socket, user }) => {
     });
 
     socket.on("call-ended", () => {
+      console.log("📞 Call ended");
       stopAudio();
       window.location.reload();
     });
@@ -44,6 +47,7 @@ const CallRoom = ({ socket, user }) => {
     });
 
     return () => {
+      console.log("🧹 Cleaning up");
       stopAudio();
       socket.off("room-status");
       socket.off("chat-message");
@@ -62,10 +66,30 @@ const CallRoom = ({ socket, user }) => {
     });
   };
 
-  const enableAudio = () => {
+  const enableAudio = async () => {
+    console.log("🎧 Enable audio clicked");
+
+    // Initialize audio element
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = false;
-      remoteAudioRef.current.play().catch(() => {});
+      remoteAudioRef.current.autoplay = true;
+    }
+
+    try {
+      await startAudio();
+      setAudioEnabled(true);
+
+      // Try to play audio after a delay
+      setTimeout(() => {
+        if (remoteAudioRef.current && remoteAudioRef.current.srcObject) {
+          remoteAudioRef.current
+            .play()
+            .then(() => console.log("✅ Audio playing"))
+            .catch((e) => console.log("⚠️ Play blocked:", e.message));
+        }
+      }, 1000);
+    } catch (error) {
+      console.error("❌ Error starting audio:", error);
     }
   };
 
@@ -94,7 +118,8 @@ const CallRoom = ({ socket, user }) => {
         </button>
       )}
 
-      <audio ref={remoteAudioRef} playsInline />
+      {/* Audio element for remote stream */}
+      <audio ref={remoteAudioRef} playsInline autoPlay className="hidden" />
 
       <div className="flex-1">
         <ChatBox messages={messages} sendMessage={sendMessage} />
