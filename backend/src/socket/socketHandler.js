@@ -69,6 +69,12 @@ export const socketHandler = (io) => {
       socket.to("call-room").emit("answer", answer);
     });
 
+    // In the connection handler, add:
+    socket.on("user-joined-call", (data) => {
+      console.log("User joined call:", data);
+      socket.to("call-room").emit("user-joined", data);
+    });
+
     socket.on("ice-candidate", (candidate) => {
       socket.to("call-room").emit("ice-candidate", candidate);
     });
