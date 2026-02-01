@@ -54,6 +54,11 @@ export const socketHandler = (io) => {
     });
 
     // 🔊 WEBRTC SIGNALING (FIXED)
+
+    socket.on("renegotiate", () => {
+      socket.to("call-room").emit("renegotiate");
+    });
+
     socket.on("offer", (offer) => {
       console.log("📞 Offer from", socket.id);
       socket.to("call-room").emit("offer", offer);

@@ -13,6 +13,9 @@ const CallRoom = ({ socket, user }) => {
   const isAgent = user.role.toLowerCase() === "agent";
   const { startAudio, stopAudio, remoteAudioRef } = useWebRTC(socket, isAgent);
 
+  // ===============================
+  // SOCKET + ROOM SETUP
+  // ===============================
   useEffect(() => {
     // ✅ JOIN ONLY ONCE
     if (!hasJoined.current) {
@@ -29,7 +32,6 @@ const CallRoom = ({ socket, user }) => {
 
     // ✅ CHAT
     socket.on("chat-message", (msg) => {
-      console.log("📨 FRONTEND RECEIVED:", msg);
       setMessages((prev) => [...prev, msg]);
     });
 
@@ -45,20 +47,20 @@ const CallRoom = ({ socket, user }) => {
       window.location.reload();
     });
 
-    console.log("🔗 Socket connected?", socket.connected);
-
     return () => {
       stopAudio();
       socket.off("room-status");
       socket.off("chat-message");
       socket.off("call-ended");
+      socket.off("join-rejected");
     };
   }, [socket, user.role, stopAudio]);
 
+  // ===============================
+  // CHAT SEND
+  // ===============================
   const sendMessage = (text) => {
     if (!text.trim()) return;
-
-    console.log("📤 FRONTEND SEND:", text);
 
     socket.emit("send-message", {
       text,
@@ -68,12 +70,36 @@ const CallRoom = ({ socket, user }) => {
     });
   };
 
+  // ===============================
+  // ENABLE AUDIO (CRITICAL)
+  // ===============================
   const enableAudio = async () => {
     console.log("🎧 Enable Audio clicked");
+
+    if (!remoteAudioRef.current) return;
+
+    // 🔓 unlock browser audio
+    remoteAudioRef.current.muted = false;
+
+    // start WebRTC
     await startAudio();
+
+    // 🔥 play AFTER ontrack attaches stream
+    setTimeout(() => {
+      remoteAudioRef.current
+        ?.play()
+        .then(() => console.log("🔊 Audio playing"))
+        .catch((e) =>
+          console.warn("🔇 Audio play blocked (expected on same device)", e),
+        );
+    }, 500);
+
     setAudioEnabled(true);
   };
 
+  // ===============================
+  // END CALL
+  // ===============================
   const endCall = () => {
     socket.emit("end-call");
     stopAudio();
@@ -91,7 +117,7 @@ const CallRoom = ({ socket, user }) => {
         <StatusBar status={status} />
       </div>
 
-      {/* 🔊 ENABLE AUDIO BUTTON */}
+      {/* ENABLE AUDIO */}
       {status === "Connected" && !audioEnabled && (
         <button
           onClick={enableAudio}
@@ -101,8 +127,8 @@ const CallRoom = ({ socket, user }) => {
         </button>
       )}
 
-      {/* 🔊 REMOTE AUDIO OUTPUT */}
-      <audio ref={remoteAudioRef} autoPlay />
+      {/* REMOTE AUDIO */}
+      <audio ref={remoteAudioRef} playsInline />
 
       {/* CHAT */}
       <div className="flex-1">
