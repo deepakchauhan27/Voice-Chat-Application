@@ -25,31 +25,30 @@ export const useWebRTC = (socket, isCaller, isConnected) => {
     localStreamRef.current = stream;
 
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  });
 
-    // Reserve bidirectional audio (important)
-    pc.addTransceiver("audio", { direction: "sendrecv" });
+  // 🔑 Reserve bidirectional audio
+  pc.addTransceiver("audio", { direction: "sendrecv" });
 
-    // Add mic track
-    stream.getTracks().forEach((track) => {
-      pc.addTrack(track, stream);
-    });
+  // 🔑 Attach mic BEFORE offer exists
+  stream.getTracks().forEach((track) => {
+    pc.addTrack(track, stream);
+  });
 
-    // Receive remote audio
-    pc.ontrack = (event) => {
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    pc.onicecandidate = (e) => {
-      if (e.candidate) socket.emit("ice-candidate", e.candidate);
-    };
-
-    peerRef.current = pc;
-    return pc;
+  pc.ontrack = (event) => {
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = event.streams[0];
+    }
   };
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) socket.emit("ice-candidate", e.candidate);
+  };
+
+  peerRef.current = pc;
+  return pc;
+};
 
   // ===============================
   // SIGNALING
